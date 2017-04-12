@@ -1,9 +1,9 @@
 package ie.dit;
 /**
- * MST Algorithms Assignment
+ * Prim's MST Algorithms Assignment
  *
  * This is the MST Algorithms Assignment for Algorithms and Data Structures. It implements
- * Prim's and Kruskal's Algorithms.
+ * Prim's Algorithm.
  *
  * Author: Mark Barrett
  * Version: 1.0
@@ -12,7 +12,7 @@ package ie.dit;
 import java.io.*;
 import java.util.Scanner;
 
-//Heap Class for Prim's Algorithm
+/* HEAP CLASS FOR PRIM */
 class Heap
 {
     private int[] h;	   // heap array
@@ -100,6 +100,121 @@ class Heap
     }
 }
 
+/* EDGE CLASS FOR KRUSKAL */
+class Edge {
+    public int u, v, wgt;
+
+    public Edge() {
+        u = 0;
+        v = 0;
+        wgt = 0;
+    }
+
+    public Edge(int u, int v, int wgt) {
+        this.u = u;
+        this.v = v;
+        this.wgt = wgt;
+    }
+
+    public void show() {
+        System.out.print("Edge " + toChar(u) + "--" + wgt + "--" + toChar(v) + "\n") ;
+    }
+
+    // convert vertex into char for pretty printing
+    private char toChar(int u)
+    {
+        return (char)(u + 64);
+    }
+}
+
+/****************************************************
+ *
+ *       UnionFind partition to support union-find operations
+ *       Implemented simply using Discrete Set Trees
+ *
+ *****************************************************/
+
+class UnionFindSets
+{
+    private int[] treeParent;
+    private int[] rank;
+    private int N;
+
+    public UnionFindSets(int V)
+    {
+        N = V;
+        treeParent = new int[V+1];
+        rank = new int[V+1];
+        for (int i = 0; i < N; i++) {
+            treeParent[i] = i;
+            rank[i] = 0;
+        }
+    }
+
+    public int findSet(int vertex)
+    {
+        while (vertex != treeParent[vertex]) {
+            treeParent[vertex] = treeParent[treeParent[vertex]];    // path compression by halving
+            vertex = treeParent[vertex];
+        }
+        return vertex;
+    }
+
+    public void union(int set1, int set2)
+    {
+        int xRoot = findSet(set1);
+        int yRoot = findSet(set2);
+        if (xRoot == yRoot) return;
+
+        // make root of smaller rank point to root of larger rank
+        if      (rank[xRoot] < rank[yRoot]) treeParent[xRoot] = yRoot;
+        else if (rank[xRoot] > rank[yRoot]) treeParent[yRoot] = xRoot;
+        else {
+            treeParent[yRoot] = xRoot;
+            rank[xRoot]++;
+        }
+    }
+
+    public void showTrees()
+    {
+        int i;
+        for(i=1; i<=N; ++i)
+            System.out.print(toChar(i) + "->" + toChar(treeParent[i]) + "  " );
+        System.out.print("\n");
+    }
+
+    public void showSets()
+    {
+        int u, root;
+        int[] shown = new int[N+1];
+        for (u=1; u<=N; ++u)
+        {
+            root = findSet(u);
+            if(shown[root] != 1) {
+                showSet(root);
+                shown[root] = 1;
+            }
+        }
+        System.out.print("\n");
+    }
+
+    private void showSet(int root)
+    {
+        int v;
+        System.out.print("Set{");
+        for(v=1; v<=N; ++v)
+            if(findSet(v) == root)
+                System.out.print(toChar(v) + " ");
+        System.out.print("}  ");
+
+    }
+
+    private char toChar(int u)
+    {
+        return (char)(u + 64);
+    }
+}
+
 class Graph {
     class Node {
         public int vert;
@@ -114,6 +229,9 @@ class Graph {
     private Node[] adj;
     private Node z;
     private int[] mst;
+
+    // create edge array
+    Edge[] edge;
 
     // used for traversing graph
     private int[] visited;
@@ -138,19 +256,24 @@ class Graph {
         V = Integer.parseInt(parts[0]);
         E = Integer.parseInt(parts[1]);
 
+        edge = new Edge[E+1];
+
+        /* THIS WILL CREATE THE NODES FOR PRIM */
         // create sentinel node
         z = new Node();
         z.next = z;
 
         // create adjacency lists, initialised to sentinel node z
         adj = new Node[V+1];
+
         for(v = 1; v <= V; ++v)
             adj[v] = z;
 
+        /* THIS WILL CREATE THE EDGES FOR KRUSKAL */
+
         // read the edges
         System.out.println("Reading edges from text file");
-        for(e = 1; e <= E; ++e)
-        {
+        for(e = 1; e <= E; ++e) {
             line = reader.readLine();
             parts = line.split(splits);
             u = Integer.parseInt(parts[0]);
@@ -174,17 +297,16 @@ class Graph {
 
             // Add the connection to the left hand vertices list
             // If it points at the sentinel
-            if(adj[v] == z) {
+            if (adj[v] == z) {
                 adj[v] = m;
                 m.next = z;
-            }
-            else {
+            } else {
                 m.next = adj[v].next;
                 adj[v].next = m;
             }
 
             // Add the connection to the right hand vertices list
-            if(adj[u] == z) {
+            if (adj[u] == z) {
                 adj[u] = n;
                 n.next = z;
             }
@@ -194,6 +316,21 @@ class Graph {
                 n.next = adj[u].next;
                 adj[u].next = n;
             }
+
+            /* Now that we have read the edge and made a node out of it for Prim, we can now make an edge object
+            for it for Kruskal
+             */
+
+            // Create the object
+            Edge newEdge = new Edge(u, v, wgt);
+
+            // Insert the object
+            edge[e] = newEdge;
+        }
+
+        System.out.println("\nPrinting edges for Kruskal\n");
+        for(e=1; e<E; e++){
+            edge[e].show();
         }
 
     }
@@ -209,7 +346,7 @@ class Graph {
         int v;
         Node n;
 
-        System.out.println("\nPrinting out the adjaceny matrix of lists");
+        System.out.println("\nPrinting out the adjaceny matrix of lists for Prim");
         for(v=1; v<=V; ++v){
             System.out.print("\nadj[" + toChar(v) + "] ->" );
             for(n = adj[v]; n != z; n = n.next)
@@ -219,6 +356,8 @@ class Graph {
     }
 
 
+
+    /* PRIMS ALGORITHM */
 
     public void MST_Prim(int s)
     {
@@ -278,6 +417,93 @@ class Graph {
         System.out.println("");
     }
 
+    /* QUICK SORT ALGORITHM TO SORT EDGES FOR KRUSKAL
+     */
+    public static Edge[] quickSort(Edge[] arr, int low, int high) {
+        if (arr == null || arr.length == 0)
+            return arr;
+
+        if (low >= high)
+            return arr;
+
+        // pick the pivot
+        int middle = low + (high - low) / 2;
+        Edge pivot = arr[middle];
+
+        // make left < pivot and right > pivot
+        int i = low, j = high;
+        while (i <= j) {
+            while (arr[i].wgt < pivot.wgt) {
+                i++;
+            }
+
+            while (arr[j].wgt > pivot.wgt) {
+                j--;
+            }
+
+            if (i <= j) {
+                Edge temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+                i++;
+                j--;
+            }
+        }
+
+        // recursively sort two sub parts
+        if (low < j)
+            quickSort(arr, low, j);
+
+        if (high > i)
+            quickSort(arr, i, high);
+
+        return arr;
+    }
+
+    /**********************************************************
+     *
+     *       Kruskal's minimum spanning tree algorithm
+     *
+     **********************************************************/
+    public Edge[] MST_Kruskal()
+    {
+        int ei, i = 0;
+        int uSet, vSet;
+        UnionFindSets partition = new UnionFindSets(V);
+        int wgt = 0;
+
+        // create edge array to store MST
+        // Initially it has no edges.
+        Edge[] mst = new Edge[V+1];
+
+        // Not using a heap
+        /* Firstly, we must sort all the edges in the array in increasing order */
+        edge = quickSort(edge, 1, edge.length - 1);
+
+        // After quick sort
+        for(int j=1; j<V+1; j++) {
+            uSet = edge[j].v;
+            vSet = edge[j].u;
+            if (partition.findSet(vSet) != partition.findSet(uSet)) {
+                mst[j] = edge[j];
+                partition.union(uSet, vSet);
+                wgt = wgt + edge[j].wgt;
+            }
+        }
+        System.out.println("\nWeight of MST:\n"+wgt);
+        showMSTKruskal(mst);
+        return mst;
+    }
+
+    public void showMSTKruskal(Edge[] mst)
+    {
+        System.out.print("\nMinimum spanning tree build from following edges:\n");
+        for(int e = 1; e < V-1; ++e) {
+            mst[e].show();
+        }
+        System.out.println();
+    }
+
 }
 
 public class MST {
@@ -294,7 +520,12 @@ public class MST {
         try {
             Graph g = new Graph(graphFile);
             g.display();
+
+            System.out.println("\n-- Prim's MST --");
             g.MST_Prim(startingVertex);
+
+            System.out.println("\n-- Kruskal's MST --");
+            g.MST_Kruskal();
         }
         catch(Exception e) {
             System.out.println(e);
