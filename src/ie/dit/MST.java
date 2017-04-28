@@ -485,9 +485,11 @@ class Graph {
             uSet = edge[j].v;
             vSet = edge[j].u;
             if (partition.findSet(vSet) != partition.findSet(uSet)) {
-                mst[j] = edge[j];
+                mst[i] = edge[j];
                 partition.union(uSet, vSet);
+                partition.showSets();
                 wgt = wgt + edge[j].wgt;
+                i++;
             }
         }
         System.out.println("\nWeight of MST:\n"+wgt);
@@ -498,7 +500,7 @@ class Graph {
     public void showMSTKruskal(Edge[] mst)
     {
         System.out.print("\nMinimum spanning tree build from following edges:\n");
-        for(int e = 1; e < V-1; ++e) {
+        for(int e = 1; e < V-1; e++) {
             mst[e].show();
         }
         System.out.println();
